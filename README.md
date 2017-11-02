@@ -26,7 +26,8 @@ using Unwrap
 unwrapped_array = unwrap(wrapped_array)
 ```
 
-where `wrapped_array` is an `AbstractArray` of `Number`.
+where `wrapped_array` is an `AbstractArray` of `Number`. There is also an
+in-place version, `unwrap!(A)` which mutates `A`
 
 ## Acknowledgments
 

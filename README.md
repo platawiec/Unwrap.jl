@@ -11,7 +11,7 @@ More information about the code can be found on GERI homepage:
 ## Benchmarks
 
 Two versions of unwrap have been implemented - A Julia version which calls the
-C functions, and a
+C functions, and a pure Julia version. Only the pure Julia version is exported.
 
 ## Installation
 

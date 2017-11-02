@@ -1,8 +1,8 @@
 function unwrap!(A::AbstractVector)
-    previous_element = A[1]
+    @inbounds previous_element = A[1]
     difference = zero(previous_element)
     periods = 0
-    for i in 2:length(A)
+    @inbounds for i in 2:length(A)
         difference = A[i] - previous_element
         if difference > π
             periods -= 1

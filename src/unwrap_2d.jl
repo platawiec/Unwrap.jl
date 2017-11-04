@@ -33,12 +33,14 @@ Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
                     find_period(g1.val, g2.val))
 Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
 
-function unwrap!(wrapped_image::AbstractMatrix, seed::Int=-1)
+function unwrap!(wrapped_image::AbstractMatrix,
+                 wrap_around::Vector{Bool}=[false, false],
+                 seed::Int=-1)
 
     if seed != -1
         srand(seed)
     end
-    
+
     mod = 2 * convert(eltype(wrapped_image), π)
     params = UnwrapParameters(mod, false, false, 0)
     # image is transferred to array of tuple (pixel, pixel_list)

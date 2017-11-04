@@ -1,4 +1,6 @@
-function unwrap!(A::AbstractVector, seed::Int=-1)
+function unwrap!(A::AbstractVector,
+                 wrap_around::Vector{Bool}=[false],
+                 seed::Int=-1)
     @inbounds previous_element = A[1]
     difference = zero(previous_element)
     periods = 0

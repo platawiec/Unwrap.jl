@@ -10,7 +10,7 @@ function unwrap!(A::AbstractVector)
             periods += 1
         end
         previous_element = A[i]
-        A[i] = previous_element + 2 * π * periods
+        A[i] = previous_element + 2 * one(previous_element) * π * periods
     end
     return A
 end

@@ -26,3 +26,19 @@ uw_f32_test = unwrap(mat_f32_w)
 difference = mat_f32_uw[1,1] - uw_f32_test[1,1]
 @test eltype(uw_f32_test) == Float32
 @test (uw_f32_test + difference) ≈ mat_f32_uw
+
+# Test wrap_around
+# after unwrapping, pixels at borders should be equal to corresponding pixels
+# on other side
+wrap_around = [true, true]
+wa_vec = linspace(0, 5π, 20)
+wa_uw = wa_vec .+ wa_vec'
+# make periodic
+wa_uw[:,end] = wa_uw[:, 1]
+wa_uw[end, :] = wa_uw[1, :]
+wa_w = wa_uw .% (2π)
+wa_test = unwrap(mat_wrapped, wrap_around, 0)
+difference = wa_uw[1,1] - wa_test[1,1]
+@test (wa_test + difference) ≈ wa_uw
+@test wa_test[:, 1] ≈ wa_test[:, end]
+@test wa_test[end, :] ≈ wa_test[1, :]

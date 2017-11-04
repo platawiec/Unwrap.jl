@@ -32,13 +32,16 @@ difference = mat_f32_uw[1,1] - uw_f32_test[1,1]
 # on other side
 wrap_around = [true, true]
 wa_vec = linspace(0, 5π, 20)
-wa_uw = wa_vec .+ wa_vec'
+wa_uw = wa_vec .+ zeros(20)'
 # make periodic
-wa_uw[:,end] = wa_uw[:, 1]
 wa_uw[end, :] = wa_uw[1, :]
 wa_w = wa_uw .% (2π)
-wa_test = unwrap(mat_wrapped, wrap_around, 0)
+wa_test = unwrap(wa_w, wrap_around, 0)
 difference = wa_uw[1,1] - wa_test[1,1]
-@test (wa_test + difference) ≈ wa_uw
+# with wrap-around, the borders should be equal, but for this problem the
+# image may not be recovered exactly
 @test wa_test[:, 1] ≈ wa_test[:, end]
 @test wa_test[end, :] ≈ wa_test[1, :]
+# In this case, calling unwrap w/o wrap_around does not recover the borders
+wa_test_nowa = unwrap(wa_w)
+@test !(wa_test_nowa[end, :] ≈ wa_test_nowa[1, :]) 

@@ -137,12 +137,12 @@ function merge_groups!(edge)
     if pixel_1.group !== pixel_2.group
         # pixel 2 is alone in group
         if is_pixelalone(pixel_2)
-            merge_pixels!(pixel_1, pixel_2)
+            merge_pixels!(pixel_1, pixel_2, -edge.periods)
         elseif is_pixelalone(pixel_1)
-            merge_pixels!(pixel_2, pixel_1)
+            merge_pixels!(pixel_2, pixel_1, edge.periods)
         else
             if length(pixel_1.group) > length(pixel_2.group)
-                merge_into_group!(pixel_1, pixel_2, edge.periods)
+                merge_into_group!(pixel_1, pixel_2, -edge.periods)
             else
                 merge_into_group!(pixel_2, pixel_1, edge.periods)
             end
@@ -150,18 +150,19 @@ function merge_groups!(edge)
     end
 end
 
-function merge_pixels!(pixel_base, pixel_target)
+function merge_pixels!(pixel_base, pixel_target, periods)
     append!(pixel_base.group, pixel_target.group)
     pixel_target.group = pixel_base.group
+    pixel_target.periods = pixel_base.periods + periods
 end
 
 function merge_into_group!(pixel_base, pixel_target, periods)
-    add_periods = pixel_base.periods - periods - pixel_target.periods
+    add_periods = pixel_base.periods + periods - pixel_target.periods
     for pixel in pixel_target.group
-        pixel.periods += add_periods
         if pixel !== pixel_target
+            pixel.periods += add_periods
             pixel.group = pixel_base.group
         end
     end
-    merge_pixels!(pixel_base, pixel_target)
+    merge_pixels!(pixel_base, pixel_target, periods)
 end

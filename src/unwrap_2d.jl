@@ -35,7 +35,7 @@ Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
 
 function unwrap!(wrapped_image::AbstractMatrix)
 
-    mod = convert(eltype(wrapped_image), 2π)
+    mod = 2 * convert(eltype(wrapped_image), π)
     params = UnwrapParameters(mod, false, false, 0)
     # image is transferred to array of tuple (pixel, pixel_list)
     pixel_image = broadcast(init_pixels, wrapped_image)
@@ -103,15 +103,16 @@ function gather_pixels!(edges, params)
 end
 
 function unwrap_image!(image, pixel_image)
-    @. image = 2π * getfield(pixel_image, :periods) + getfield(pixel_image, :val)
+    T = typeof(pixel_image[1,1].val)
+    @. image = 2 * convert(T, π) * getfield(pixel_image, :periods) + getfield(pixel_image, :val)
 end
 
 function wrap_val(val)
     wrapped_val = val
     if val > π
-        wrapped_val = val - 2π
+        wrapped_val = val - 2 * convert(typeof(val), π)
     elseif val < -π
-        wrapped_val = val + 2π
+        wrapped_val = val + 2 * convert(typeof(val), π)
     end
     return wrapped_val
 end

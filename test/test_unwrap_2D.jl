@@ -30,7 +30,7 @@ difference = mat_f32_uw[1,1] - uw_f32_test[1,1]
 # Test wrap_around
 # after unwrapping, pixels at borders should be equal to corresponding pixels
 # on other side
-wrap_around = [true, true]
+wrap_around = (true, true)
 wa_vec = linspace(0, 5π, 20)
 wa_uw = wa_vec .+ zeros(20)'
 # make periodic
@@ -44,4 +44,4 @@ difference = wa_uw[1,1] - wa_test[1,1]
 @test wa_test[end, :] ≈ wa_test[1, :]
 # In this case, calling unwrap w/o wrap_around does not recover the borders
 wa_test_nowa = unwrap(wa_w)
-@test !(wa_test_nowa[end, :] ≈ wa_test_nowa[1, :]) 
+@test !(wa_test_nowa[end, :] ≈ wa_test_nowa[1, :])

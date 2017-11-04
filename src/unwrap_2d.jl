@@ -32,7 +32,7 @@ Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
 Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
 
 function unwrap!(wrapped_image::AbstractMatrix,
-                 wrap_around::Vector{Bool}=[false, false],
+                 wrap_around::NTuple{2, Bool}=(false, false),
                  seed::Int=-1)
 
     if seed != -1

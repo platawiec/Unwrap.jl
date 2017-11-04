@@ -1,5 +1,5 @@
 function unwrap!(A::AbstractVector,
-                 wrap_around::Vector{Bool}=[false],
+                 wrap_around::NTuple{1, Bool}=(false,),
                  seed::Int=-1)
     @inbounds previous_element = A[1]
     difference = zero(previous_element)

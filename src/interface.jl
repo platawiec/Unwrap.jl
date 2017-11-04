@@ -20,16 +20,8 @@ In-place version of unwrap.
 """
 unwrap!
 
-function unwrap(A::AbstractVector,
-                wrap_around::Vector{Bool}=[false],
-                seed::Int=-1)
-    A_copy = copy(A)
-    unwrap!(A_copy, wrap_around, seed)
-    return A_copy
-end
-
-function unwrap(A::AbstractMatrix,
-                wrap_around::Vector{Bool}=[false, false],
+function unwrap{T, N}(A::AbstractArray{T, N},
+                wrap_around::Vector{Bool}=zeros(Bool, N),
                 seed::Int=-1)
     A_copy = copy(A)
     unwrap!(A_copy, wrap_around, seed)

@@ -40,7 +40,7 @@ function unwrap!(wrapped_image::AbstractMatrix,
     end
 
     mod = 2 * convert(eltype(wrapped_image), π)
-    params = UnwrapParameters(wrap_around[1], wrap_around[2])
+    params = UnwrapParameters(wrap_around...)
     # image is transferred to array of tuple (pixel, pixel_list)
     pixel_image = broadcast(init_pixels, wrapped_image)
     calculate_reliability(pixel_image, params)

@@ -65,36 +65,80 @@ end
 
 # calculate the reliability of the pixels
 function calculate_reliability(pixel_image, params)
-    const left_pixel = CartesianIndex(0, -1)
-    const right_pixel = CartesianIndex(0, 1)
-    const top_pixel = CartesianIndex(1, 0)
-    const bot_pixel = CartesianIndex(-1, 0)
+    # get the shifted pixel indices in CartesinanIndex form
+    pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (1, 0), (-1, 0)))
+    size_y, size_x = size(pixel_image)
     # inner loop
-    for i in CartesianRange(CartesianIndex(2,2), CartesianIndex(size(pixel_image)[1]-1, size(pixel_image)[2]-1))
-        H = wrap_val(pixel_image[i+left_pixel].val - pixel_image[i].val)
-        V = wrap_val(pixel_image[i+right_pixel].val - pixel_image[i].val)
-        D1 = wrap_val(pixel_image[i+top_pixel].val - pixel_image[i].val)
-        D2 = wrap_val(pixel_image[i+bot_pixel].val - pixel_image[i].val)
-        pixel_image[i].reliability = H*H + V*V + D1*D1 + D2*D2
+    for i in CartesianRange(CartesianIndex(2, 2), CartesianIndex(size_y-1, size_x-1))
+        pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
     end
+
+    if params.x_connectivity
+        # left border
+        pixel_shifts = CartesianIndex.(((0, size_x-1), (0, 1), (1, 0), (-1, 0)))
+        for i in CartesianRange(CartesianIndex(2, 1), CartesianIndex(size_y-1, 1))
+            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+        end
+        # right border
+        pixel_shifts = CartesianIndex.(((0, -1), (0, -size_x+1), (1, 0), (-1, 0)))
+        for i in CartesianRange(CartesianIndex(2, size_x), CartesianIndex(size_y-1, size_x))
+            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+        end
+    end
+    if params.y_connectivity
+        # top border
+        pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (-size_y+1, 0), (-1, 0)))
+        for i in CartesianRange(CartesianIndex(size_y, 2), CartesianIndex(size_y, size_x-1))
+            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+        end
+        # bottom border
+        pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (1, 0), (size_y-1, 0)))
+        for i in CartesianRange(CartesianIndex(1, 2), CartesianIndex(1, size_x-1))
+            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+        end
+    end
+end
+
+function calculate_pixel_reliability(pixel_image, pixel_index, pixel_shifts)
+    H = wrap_val(pixel_image[pixel_index+pixel_shifts[1]].val - pixel_image[pixel_index].val)
+    V = wrap_val(pixel_image[pixel_index+pixel_shifts[2]].val - pixel_image[pixel_index].val)
+    D1 = wrap_val(pixel_image[pixel_index+pixel_shifts[3]].val - pixel_image[pixel_index].val)
+    D2 = wrap_val(pixel_image[pixel_index+pixel_shifts[4]].val - pixel_image[pixel_index].val)
+    return H*H + V*V + D1*D1 + D2*D2
 end
 
 # calculate reliability of horizontal edges
 function populate_horizontal_edges!(edges, pixel_image, params)
-    edge_horizontal_domain = (size(pixel_image)[1]-1, size(pixel_image)[2])
+    size_y, size_x = size(pixel_image)
+    edge_horizontal_domain = (size_y, size_x-1)
     for i in CartesianRange(edge_horizontal_domain)
         push!(edges, Edge(pixel_image[i],
-                          pixel_image[i+CartesianIndex(1,0)]
+                          pixel_image[i+CartesianIndex(0,1)]
                          ))
+    end
+    if params.x_connectivity
+        for i in CartesianRange(CartesianIndex(1,size_x), CartesianIndex(size_y,size_x))
+            push!(edges, Edge(pixel_image[i],
+                              pixel_image[i+CartesianIndex(0,-size_x+1)]
+                             ))
+        end
     end
 end
 
 function populate_vertical_edges!(edges, pixel_image, params)
-    edge_vertical_domain = (size(pixel_image)[1], size(pixel_image)[2]-1)
+    size_y, size_x = size(pixel_image)
+    edge_vertical_domain = (size_y-1, size_x)
     for i in CartesianRange(edge_vertical_domain)
         push!(edges, Edge(pixel_image[i],
-                          pixel_image[i+CartesianIndex(0,1)]
+                          pixel_image[i+CartesianIndex(1,0)]
                          ))
+    end
+    if params.y_connectivity
+        for i in CartesianRange(CartesianIndex(size_y,1), CartesianIndex(size_y,size_x))
+            push!(edges, Edge(pixel_image[i],
+                              pixel_image[i+CartesianIndex(-size_y+1,0)]
+                             ))
+        end
     end
 end
 
@@ -130,10 +174,6 @@ function find_period(val_left, val_right)
     return period
 end
 
-function is_pixelalone(pixel)
-    return length(pixel.group) == 1
-end
-
 function merge_groups!(edge)
     pixel_1 = edge.pixel_1
     pixel_2 = edge.pixel_2
@@ -153,6 +193,10 @@ function merge_groups!(edge)
     end
 end
 
+function is_pixelalone(pixel)
+    return length(pixel.group) == 1
+end
+
 function merge_pixels!(pixel_base, pixel_target, periods)
     append!(pixel_base.group, pixel_target.group)
     pixel_target.group = pixel_base.group
@@ -162,10 +206,12 @@ end
 function merge_into_group!(pixel_base, pixel_target, periods)
     add_periods = pixel_base.periods + periods - pixel_target.periods
     for pixel in pixel_target.group
+        # merge all pixels in pixel_target's group to pixel_base's group
         if pixel !== pixel_target
             pixel.periods += add_periods
             pixel.group = pixel_base.group
         end
     end
+    # assign pixel_target to pixel_base's group last
     merge_pixels!(pixel_base, pixel_target, periods)
 end

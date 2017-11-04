@@ -2,49 +2,61 @@ mutable struct UnwrapParameters{T}
     mod::T
     x_connectivity::Bool
     y_connectivity::Bool
-    num_edges::Int64
+    num_edges::Int
 end
 
 mutable struct Pixel{T}
-    periods::Int64
-    num_pixels_in_group::Int64
+    periods::Int
     val::T
     reliability::Float64
-    id_group::Int64
-    id_newgroup::Int64
+    id_group::Int
+    id_newgroup::Int
+    group::Vector{Pixel{T}}
+    Pixel{T}(periods, val, rel, id_group, id_newgroup) where T = (
+            p = new(periods, val, rel, id_group, id_newgroup);
+            p.group = [p];
+            p
+        )
 end
-Pixel(v) = Pixel(0, 1, v, rand(), 0, -1)
+Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 0, -1)
+
 
 mutable struct Edge{T}
     reliability::Float64
     pixel_1::Pixel{T}
     pixel_2::Pixel{T}
-    periods::Int64
+    periods::Int
 end
+Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
+                    g1,
+                    g2,
+                    find_period(g1.val, g2.val))
 Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
 
 function unwrap!(wrapped_image::AbstractMatrix)
 
     mod = convert(eltype(wrapped_image), 2π)
     params = UnwrapParameters(mod, false, false, 0)
-    pixel_image = initialise_pixels(wrapped_image)
+    # image is transferred to array of tuple (pixel, pixel_list)
+    pixel_image = broadcast(init_pixels, wrapped_image)
     calculate_reliability(pixel_image, params)
-    edges_h = calculate_reliability_horizontal_edges(pixel_image, params)
-    edges_v = calculate_reliability_vertical_edges(pixel_image, params)
+    edges = Edge{eltype(wrapped_image)}[]
+    populate_horizontal_edges!(edges, pixel_image, params)
+    populate_vertical_edges!(edges, pixel_image, params)
 
-    sort(edges)
+    sort!(edges)
 
-    gather_pixels()
+    gather_pixels!(edges, params)
 
     unwrap_image!(wrapped_image, pixel_image)
 
     return wrapped_image
 end
 
-# initialises the pixel array, benchmarked against CartesianRange
-function initialise_pixels(wrapped_image)
-    pixel_image = Pixel.(wrapped_image)
-    return pixel_image
+# function to broadcast
+function init_pixels(pixel_value)
+    p = Pixel(pixel_value)
+    p
 end
 
 # calculate the reliability of the pixels
@@ -55,68 +67,46 @@ function calculate_reliability(pixel_image, params)
     const bot_pixel = CartesianIndex(-1, 0)
     # inner loop
     for i in CartesianRange(CartesianIndex(2,2), CartesianIndex(size(pixel_image)[1]-1, size(pixel_image)[2]-1))
-        H = wrap(pixel_image[i+left_pixel].val - pixel_image[i].val)
-        V = wrap(pixel_image[i+right_pixel].val - pixel_image[i].val)
-        D1 = wrap(pixel_image[i+top_pixel].val - pixel_image[i].val)
-        D2 = wrap(pixel_image[i+bot_pixel].val - pixel_image[i].val)
+        H = wrap_val(pixel_image[i+left_pixel].val - pixel_image[i].val)
+        V = wrap_val(pixel_image[i+right_pixel].val - pixel_image[i].val)
+        D1 = wrap_val(pixel_image[i+top_pixel].val - pixel_image[i].val)
+        D2 = wrap_val(pixel_image[i+bot_pixel].val - pixel_image[i].val)
         pixel_image[i].reliability = H*H + V*V + D1*D1 + D2*D2
     end
 end
 
 # calculate reliability of horizontal edges
-function calculate_reliability_horizontal_edges(pixel_image, params)
-    e_size = (size(pixel_image)[1]-1, size(pixel_image)[2])
-    edges_horizontal = Array{Edge{typeof(pixel_image[1].val)}}(e_size)
-
-    for i in CartesianRange(size(edges_horizontal))
-        edges_horizontal[i] = Edge((pixel_image[i].reliability
-                                        + pixel_image[i+CartesianIndex(1, 0)].reliability),
-                                    pixel_image[i],
-                                    pixel_image[i+CartesianIndex(1,0)],
-                                    find_period(pixel_image[i].val,
-                                               pixel_image[i+CartesianIndex(1, 0)].val)
-                                   )
+function populate_horizontal_edges!(edges, pixel_image, params)
+    edge_horizontal_domain = (size(pixel_image)[1]-1, size(pixel_image)[2])
+    for i in CartesianRange(edge_horizontal_domain)
+        push!(edges, Edge(pixel_image[i],
+                          pixel_image[i+CartesianIndex(1,0)]
+                         ))
         params.num_edges += 1
     end
-
-    return edges_horizontal
 end
 
-function calculate_reliability_vertical_edges(pixel_image, params)
-    e_size = (size(pixel_image)[1], size(pixel_image)[2]-1)
-    edges_vertical = Array{Edge{typeof(pixel_image[1].val)}}(e_size)
-
-    for i in CartesianRange(size(edges_vertical))
-        edges_vertical[i] = Edge((pixel_image[i].reliability
-                                        + pixel_image[i+CartesianIndex(0, 1)].reliability),
-                                    pixel_image[i],
-                                    pixel_image[i+CartesianIndex(0, 1)],
-                                    find_period(pixel_image[i].val,
-                                                pixel_image[i+CartesianIndex(0, 1)].val)
-                                   )
+function populate_vertical_edges!(edges, pixel_image, params)
+    edge_vertical_domain = (size(pixel_image)[1], size(pixel_image)[2]-1)
+    for i in CartesianRange(edge_vertical_domain)
+        push!(edges, Edge(pixel_image[i],
+                          pixel_image[i+CartesianIndex(0,1)]
+                         ))
         params.num_edges += 1
     end
-
-    return edges_vertical
 end
 
-function gather_pixels(edges, params)
+function gather_pixels!(edges, params)
     for edge in edges
-        if edge.pixel_1.id_group != edge.pixel_2.id_group
-            # pixel 2 is alone in group
-            if edge.pixel_2.num_pixels_in_group == 1
-                merge_pixels!(edge.pixel_1, edge.pixel_2)
-            end
-        end
+        merge_groups!(edge)
     end
 end
 
 function unwrap_image!(image, pixel_image)
-    @. image = 2π * pixel_image.periods + pixel_image.val
-    return image
+    @. image = 2π * getfield(pixel_image, :periods) + getfield(pixel_image, :val)
 end
 
-function wrap(val)
+function wrap_val(val)
     wrapped_val = val
     if val > π
         wrapped_val = val - 2π
@@ -137,8 +127,41 @@ function find_period(val_left, val_right)
     return period
 end
 
-function merge_pixels!(pixel_1, pixel_2)
-    pixel_1.num_pixels_in_group += 1
-    pixel_2.num_pixels_in_group += 1
+function is_pixelalone(pixel)
+    return length(pixel.group) == 1
+end
 
+function merge_groups!(edge)
+    pixel_1 = edge.pixel_1
+    pixel_2 = edge.pixel_2
+    if pixel_1.group !== pixel_2.group
+        # pixel 2 is alone in group
+        if is_pixelalone(pixel_2)
+            merge_pixels!(pixel_1, pixel_2)
+        elseif is_pixelalone(pixel_1)
+            merge_pixels!(pixel_2, pixel_1)
+        else
+            if length(pixel_1.group) > length(pixel_2.group)
+                merge_into_group!(pixel_1, pixel_2, edge.periods)
+            else
+                merge_into_group!(pixel_2, pixel_1, edge.periods)
+            end
+        end
+    end
+end
+
+function merge_pixels!(pixel_base, pixel_target)
+    append!(pixel_base.group, pixel_target.group)
+    pixel_target.group = pixel_base.group
+end
+
+function merge_into_group!(pixel_base, pixel_target, periods)
+    add_periods = pixel_base.periods - periods - pixel_target.periods
+    for pixel in pixel_target.group
+        pixel.periods += add_periods
+        if pixel !== pixel_target
+            pixel.group = pixel_base.group
+        end
+    end
+    merge_pixels!(pixel_base, pixel_target)
 end

@@ -1,8 +1,6 @@
-mutable struct UnwrapParameters{T}
-    mod::T
+struct UnwrapParameters
     x_connectivity::Bool
     y_connectivity::Bool
-    num_edges::Int
 end
 
 mutable struct Pixel{T}
@@ -42,7 +40,7 @@ function unwrap!(wrapped_image::AbstractMatrix,
     end
 
     mod = 2 * convert(eltype(wrapped_image), π)
-    params = UnwrapParameters(mod, false, false, 0)
+    params = UnwrapParameters(wrap_around[1], wrap_around[2])
     # image is transferred to array of tuple (pixel, pixel_list)
     pixel_image = broadcast(init_pixels, wrapped_image)
     calculate_reliability(pixel_image, params)
@@ -88,7 +86,6 @@ function populate_horizontal_edges!(edges, pixel_image, params)
         push!(edges, Edge(pixel_image[i],
                           pixel_image[i+CartesianIndex(1,0)]
                          ))
-        params.num_edges += 1
     end
 end
 
@@ -98,7 +95,6 @@ function populate_vertical_edges!(edges, pixel_image, params)
         push!(edges, Edge(pixel_image[i],
                           pixel_image[i+CartesianIndex(0,1)]
                          ))
-        params.num_edges += 1
     end
 end
 

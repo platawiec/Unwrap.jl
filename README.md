@@ -27,7 +27,8 @@ unwrapped_array = unwrap(wrapped_array)
 ```
 
 where `wrapped_array` is an `AbstractArray` of `Number`. There is also an
-in-place version, `unwrap!(A)` which mutates `A`
+in-place version, `unwrap!(A)` which mutates `A`. The returned array will have
+the same precision as `A` (i.e. `BigFloat`, `Float32`, etc. work)
 
 ## Acknowledgments
 

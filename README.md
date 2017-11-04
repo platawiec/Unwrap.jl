@@ -8,14 +8,10 @@ More information about the code can be found on GERI homepage:
 [2D](http://www.ljmu.ac.uk/GERI/90207.htm),
 [3D](http://www.ljmu.ac.uk/GERI/90208.htm).
 
-## Benchmarks
-
-Two versions of unwrap have been implemented - A Julia version which calls the
-C functions, and a pure Julia version. Only the pure Julia version is exported.
-
 ## Installation
 
-Once complete, simply run `Pkg.add("Unwrap")`
+Once complete, simply run `Pkg.add("Unwrap")`. For now, run
+`git clone https://github.com/platawiec/Unwrap`
 
 ## Usage
 
@@ -28,7 +24,10 @@ unwrapped_array = unwrap(wrapped_array)
 
 where `wrapped_array` is an `AbstractArray` of `Number`. There is also an
 in-place version, `unwrap!(A)` which mutates `A`. The returned array will have
-the same precision as `A` (i.e. `BigFloat`, `Float32`, etc. work)
+the same precision as `A` (i.e. `BigFloat`, `Float32`, etc. work). See the
+documentation for `unwrap` for more.
+
+Currently only 1D and 2D unwrapping is supported.
 
 ## Acknowledgments
 

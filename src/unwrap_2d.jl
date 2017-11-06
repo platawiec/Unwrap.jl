@@ -18,8 +18,7 @@ mutable struct Pixel{T}
 end
 Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 0, -1)
 
-
-mutable struct Edge{T}
+struct Edge{T}
     reliability::Float64
     pixel_1::Pixel{T}
     pixel_2::Pixel{T}

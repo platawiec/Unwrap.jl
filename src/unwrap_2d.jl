@@ -38,16 +38,14 @@ function unwrap!(wrapped_image::AbstractMatrix,
         srand(seed)
     end
 
-    mod = 2 * convert(eltype(wrapped_image), π)
     params = UnwrapParameters(wrap_around...)
-    # image is transferred to array of tuple (pixel, pixel_list)
-    pixel_image = broadcast(init_pixels, wrapped_image)
+    pixel_image = init_pixels(wrapped_image)
     calculate_reliability(pixel_image, params)
     edges = Edge{eltype(wrapped_image)}[]
     populate_horizontal_edges!(edges, pixel_image, params)
     populate_vertical_edges!(edges, pixel_image, params)
 
-    sort!(edges)
+    sort!(edges, alg=MergeSort)
 
     gather_pixels!(edges, params)
 
@@ -57,9 +55,12 @@ function unwrap!(wrapped_image::AbstractMatrix,
 end
 
 # function to broadcast
-function init_pixels(pixel_value)
-    p = Pixel(pixel_value)
-    p
+function init_pixels(wrapped_image)
+    pixel_image = similar(wrapped_image, Pixel{eltype(wrapped_image)})
+    @Threads.threads for i in eachindex(wrapped_image)
+        @inbounds pixel_image[i] = Pixel(wrapped_image[i])
+    end
+    return pixel_image
 end
 
 # calculate the reliability of the pixels
@@ -69,40 +70,40 @@ function calculate_reliability(pixel_image, params)
     size_y, size_x = size(pixel_image)
     # inner loop
     for i in CartesianRange(CartesianIndex(2, 2), CartesianIndex(size_y-1, size_x-1))
-        pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+        @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
     end
 
     if params.x_connectivity
         # left border
         pixel_shifts = CartesianIndex.(((0, size_x-1), (0, 1), (1, 0), (-1, 0)))
         for i in CartesianRange(CartesianIndex(2, 1), CartesianIndex(size_y-1, 1))
-            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+            @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
         end
         # right border
         pixel_shifts = CartesianIndex.(((0, -1), (0, -size_x+1), (1, 0), (-1, 0)))
         for i in CartesianRange(CartesianIndex(2, size_x), CartesianIndex(size_y-1, size_x))
-            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+            @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
         end
     end
     if params.y_connectivity
         # top border
         pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (-size_y+1, 0), (-1, 0)))
         for i in CartesianRange(CartesianIndex(size_y, 2), CartesianIndex(size_y, size_x-1))
-            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+            @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
         end
         # bottom border
         pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (1, 0), (size_y-1, 0)))
         for i in CartesianRange(CartesianIndex(1, 2), CartesianIndex(1, size_x-1))
-            pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
+            @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
         end
     end
 end
 
 function calculate_pixel_reliability(pixel_image, pixel_index, pixel_shifts)
-    H = wrap_val(pixel_image[pixel_index+pixel_shifts[1]].val - pixel_image[pixel_index].val)
-    V = wrap_val(pixel_image[pixel_index+pixel_shifts[2]].val - pixel_image[pixel_index].val)
-    D1 = wrap_val(pixel_image[pixel_index+pixel_shifts[3]].val - pixel_image[pixel_index].val)
-    D2 = wrap_val(pixel_image[pixel_index+pixel_shifts[4]].val - pixel_image[pixel_index].val)
+    @inbounds H = wrap_val(pixel_image[pixel_index+pixel_shifts[1]].val - pixel_image[pixel_index].val)
+    @inbounds V = wrap_val(pixel_image[pixel_index+pixel_shifts[2]].val - pixel_image[pixel_index].val)
+    @inbounds D1 = wrap_val(pixel_image[pixel_index+pixel_shifts[3]].val - pixel_image[pixel_index].val)
+    @inbounds D2 = wrap_val(pixel_image[pixel_index+pixel_shifts[4]].val - pixel_image[pixel_index].val)
     return H*H + V*V + D1*D1 + D2*D2
 end
 
@@ -149,7 +150,10 @@ end
 
 function unwrap_image!(image, pixel_image)
     T = typeof(pixel_image[1,1].val)
-    @. image = 2 * convert(T, π) * getfield(pixel_image, :periods) + getfield(pixel_image, :val)
+    this_pi = convert(T, π)
+    @Threads.threads for i in eachindex(image)
+        @inbounds image[i] = 2 * this_pi * pixel_image[i].periods + pixel_image[i].val
+    end
 end
 
 function wrap_val(val)
@@ -204,7 +208,7 @@ end
 
 function merge_into_group!(pixel_base, pixel_target, periods)
     add_periods = pixel_base.periods + periods - pixel_target.periods
-    for pixel in pixel_target.group
+    @Threads.threads for pixel in pixel_target.group
         # merge all pixels in pixel_target's group to pixel_base's group
         if pixel !== pixel_target
             pixel.periods += add_periods

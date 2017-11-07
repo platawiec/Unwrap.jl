@@ -18,7 +18,6 @@ mutable struct Pixel{T}
 end
 Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 0, -1)
 
-
 struct Edge{T}
     reliability::Float64
     pixel_1::Pixel{T}
@@ -39,7 +38,7 @@ function unwrap!(wrapped_image::AbstractMatrix,
         srand(seed)
     end
 
-    params = UnwrapParameters(wrap_around[1], wrap_around[2])
+    params = UnwrapParameters(wrap_around...)
     pixel_image = init_pixels(wrapped_image)
     calculate_reliability(pixel_image, params)
     edges = Edge{eltype(wrapped_image)}[]

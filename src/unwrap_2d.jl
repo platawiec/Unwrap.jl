@@ -6,7 +6,7 @@ end
 mutable struct Pixel{T}
     periods::Int
     val::T
-    reliability::Float64
+    reliability::Float32
     id_group::Int
     id_newgroup::Int
     group::Vector{Pixel{T}}
@@ -19,7 +19,7 @@ end
 Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 0, -1)
 
 struct Edge{T}
-    reliability::Float64
+    reliability::Float32
     pixel_1::Pixel{T}
     pixel_2::Pixel{T}
     periods::Int

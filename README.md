@@ -28,6 +28,10 @@ the same precision as `A` (i.e. `BigFloat`, `Float32`, etc. work). Type
 
 Currently only 1D and 2D unwrapping is supported.
 
+## See Also
+
+The package [DSP.jl](https://github.com/JuliaDSP/DSP.jl) provides the one-dimensional version of `unwrap!` and `unwrap`. This package will live and be maintained in the JuliaDSP ecosystem.
+
 ## Acknowledgments
 
 Outside of the cited papers, interface and inspiration also taken from python's

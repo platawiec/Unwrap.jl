@@ -10,7 +10,7 @@ More information about the code can be found on GERI homepage:
 
 ## Installation
 
-Run `Pkg.clone("https://github.com/platawiec/Unwrap")`.
+Run `Pkg.clone("https://github.com/platawiec/Unwrap.jl")`.
 
 ## Usage
 

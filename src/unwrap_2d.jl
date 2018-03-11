@@ -3,21 +3,6 @@ struct UnwrapParameters
     y_connectivity::Bool
 end
 
-mutable struct Pixel{T}
-    periods::Int
-    val::T
-    reliability::Float64
-    id_group::Int
-    id_newgroup::Int
-    group::Vector{Pixel{T}}
-    Pixel{T}(periods, val, rel, id_group, id_newgroup) where T = (
-            p = new(periods, val, rel, id_group, id_newgroup);
-            p.group = [p];
-            p
-        )
-end
-Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 0, -1)
-
 struct Edge{T}
     reliability::Float64
     pixel_1::Pixel{T}
@@ -180,41 +165,18 @@ end
 function merge_groups!(edge)
     pixel_1 = edge.pixel_1
     pixel_2 = edge.pixel_2
-    if pixel_1.group !== pixel_2.group
+    if is_differentgroup(pixel_1, pixel_2)
         # pixel 2 is alone in group
         if is_pixelalone(pixel_2)
             merge_pixels!(pixel_1, pixel_2, -edge.periods)
         elseif is_pixelalone(pixel_1)
             merge_pixels!(pixel_2, pixel_1, edge.periods)
         else
-            if length(pixel_1.group) > length(pixel_2.group)
+            if is_bigger(pixel_1, pixel_2)
                 merge_into_group!(pixel_1, pixel_2, -edge.periods)
             else
                 merge_into_group!(pixel_2, pixel_1, edge.periods)
             end
         end
     end
-end
-
-function is_pixelalone(pixel)
-    return length(pixel.group) == 1
-end
-
-function merge_pixels!(pixel_base, pixel_target, periods)
-    append!(pixel_base.group, pixel_target.group)
-    pixel_target.group = pixel_base.group
-    pixel_target.periods = pixel_base.periods + periods
-end
-
-function merge_into_group!(pixel_base, pixel_target, periods)
-    add_periods = pixel_base.periods + periods - pixel_target.periods
-    @Threads.threads for pixel in pixel_target.group
-        # merge all pixels in pixel_target's group to pixel_base's group
-        if pixel !== pixel_target
-            pixel.periods += add_periods
-            pixel.group = pixel_base.group
-        end
-    end
-    # assign pixel_target to pixel_base's group last
-    merge_pixels!(pixel_base, pixel_target, periods)
 end

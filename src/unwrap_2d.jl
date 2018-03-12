@@ -3,18 +3,6 @@ struct UnwrapParameters
     y_connectivity::Bool
 end
 
-struct Edge{T}
-    reliability::Float64
-    pixel_1::Pixel{T}
-    pixel_2::Pixel{T}
-    periods::Int
-end
-Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
-                    g1,
-                    g2,
-                    find_period(g1.val, g2.val))
-Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
-
 function unwrap!(wrapped_image::AbstractMatrix,
                  wrap_around::NTuple{2, Bool}=(false, false),
                  seed::Int=-1)
@@ -27,6 +15,10 @@ function unwrap!(wrapped_image::AbstractMatrix,
     pixel_image = init_pixels(wrapped_image)
     calculate_reliability(pixel_image, params)
     edges = Edge{eltype(wrapped_image)}[]
+    sizex, sizey = size(wrapped_image)
+    sizehint!(edges, (sizex-1)*sizey + sizex*(sizey-1)
+                      + params.x_connectivity*sizey
+                      + params.y_connectivity*sizex)
     populate_horizontal_edges!(edges, pixel_image, params)
     populate_vertical_edges!(edges, pixel_image, params)
 
@@ -122,54 +114,6 @@ function populate_vertical_edges!(edges, pixel_image, params)
             push!(edges, Edge(pixel_image[i],
                               pixel_image[i+CartesianIndex(-size_y+1,0)]
                              ))
-        end
-    end
-end
-
-function gather_pixels!(edges, params)
-    for edge in edges
-        merge_groups!(edge)
-    end
-end
-
-function unwrap_image!(image, pixel_image)
-    T = typeof(pixel_image[1,1].val)
-    this_pi = convert(T, π)
-    @Threads.threads for i in eachindex(image)
-        @inbounds image[i] = 2 * this_pi * pixel_image[i].periods + pixel_image[i].val
-    end
-end
-
-function wrap_val(val)
-    wrapped_val  = val
-    wrapped_val += ifelse(val >  π, -2 * convert(typeof(val), π), zero(val))
-    wrapped_val += ifelse(val < -π,  2 * convert(typeof(val), π), zero(val))
-    return wrapped_val
-end
-
-function find_period(val_left, val_right)
-    difference = val_left - val_right
-    period  = 0
-    period += ifelse(difference >  π, -1, 0)
-    period += ifelse(difference < -π,  1, 0)
-    return period
-end
-
-function merge_groups!(edge)
-    pixel_1 = edge.pixel_1
-    pixel_2 = edge.pixel_2
-    if is_differentgroup(pixel_1, pixel_2)
-        # pixel 2 is alone in group
-        if is_pixelalone(pixel_2)
-            merge_pixels!(pixel_1, pixel_2, -edge.periods)
-        elseif is_pixelalone(pixel_1)
-            merge_pixels!(pixel_2, pixel_1, edge.periods)
-        else
-            if is_bigger(pixel_1, pixel_2)
-                merge_into_group!(pixel_1, pixel_2, -edge.periods)
-            else
-                merge_into_group!(pixel_2, pixel_1, edge.periods)
-            end
         end
     end
 end

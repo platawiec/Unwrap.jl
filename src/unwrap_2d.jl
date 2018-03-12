@@ -48,7 +48,6 @@ function init_pixels(wrapped_image)
     return pixel_image
 end
 
-# calculate the reliability of the pixels
 function calculate_reliability(pixel_image, params)
     # get the shifted pixel indices in CartesinanIndex form
     pixel_shifts = CartesianIndex.(((0, -1), (0, 1), (1, 0), (-1, 0)))
@@ -142,12 +141,9 @@ function unwrap_image!(image, pixel_image)
 end
 
 function wrap_val(val)
-    wrapped_val = val
-    if val > π
-        wrapped_val = val - 2 * convert(typeof(val), π)
-    elseif val < -π
-        wrapped_val = val + 2 * convert(typeof(val), π)
-    end
+    wrapped_val  = val
+    wrapped_val += ifelse(val >  π, -2 * convert(typeof(val), π), zero(val))
+    wrapped_val += ifelse(val < -π,  2 * convert(typeof(val), π), zero(val))
     return wrapped_val
 end
 

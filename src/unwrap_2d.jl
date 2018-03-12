@@ -149,12 +149,9 @@ end
 
 function find_period(val_left, val_right)
     difference = val_left - val_right
-    period = 0
-    if difference > π
-        period = -1
-    elseif difference < -π
-        period = 1
-    end
+    period  = 0
+    period += ifelse(difference >  π, -1, 0)
+    period += ifelse(difference < -π,  1, 0)
     return period
 end
 

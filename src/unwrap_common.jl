@@ -231,7 +231,7 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
 end
 
 function calculate_pixel_reliability(pixel_image::AbstractArray{T, N}, pixel_index, pixel_shifts) where {T, N}
-    sum_val = zero(T)
+    sum_val = zero(fieldtype(T, :val))
     for pixel_shift in pixel_shifts
         @inbounds sum_val += (wrap_val(pixel_image[pixel_index+pixel_shift].val - pixel_image[pixel_index].val))^2
     end

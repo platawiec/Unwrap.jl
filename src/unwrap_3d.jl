@@ -1,5 +1,5 @@
 function calculate_pixel_reliability(pixel_image::AbstractArray{T, 3}, pixel_index, pixel_shifts) where T
-    sum_val = zero(T)
+    sum_val = zero(fieldtype(T, :val))
     @inbounds sum_val += (wrap_val(pixel_image[pixel_index+pixel_shifts[1]].val - pixel_image[pixel_index].val))^2
     @inbounds sum_val += (wrap_val(pixel_image[pixel_index+pixel_shifts[2]].val - pixel_image[pixel_index].val))^2
     @inbounds sum_val += (wrap_val(pixel_image[pixel_index+pixel_shifts[3]].val - pixel_image[pixel_index].val))^2

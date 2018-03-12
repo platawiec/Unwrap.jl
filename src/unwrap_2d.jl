@@ -19,25 +19,14 @@ function unwrap!(wrapped_image::AbstractMatrix,
     sizehint!(edges, (sizex-1)*sizey + sizex*(sizey-1)
                       + params.x_connectivity*sizey
                       + params.y_connectivity*sizex)
-    populate_horizontal_edges!(edges, pixel_image, params)
-    populate_vertical_edges!(edges, pixel_image, params)
+    populate_edges!(edges, pixel_image, 1, params.x_connectivity)
+    populate_edges!(edges, pixel_image, 2, params.y_connectivity)
 
     sort!(edges, alg=MergeSort)
-
     gather_pixels!(edges, params)
-
     unwrap_image!(wrapped_image, pixel_image)
 
     return wrapped_image
-end
-
-# function to broadcast
-function init_pixels(wrapped_image)
-    pixel_image = similar(wrapped_image, Pixel{eltype(wrapped_image)})
-    @Threads.threads for i in eachindex(wrapped_image)
-        @inbounds pixel_image[i] = Pixel(wrapped_image[i])
-    end
-    return pixel_image
 end
 
 function calculate_reliability(pixel_image, params)
@@ -81,39 +70,4 @@ function calculate_pixel_reliability(pixel_image, pixel_index, pixel_shifts)
     @inbounds D1 = wrap_val(pixel_image[pixel_index+pixel_shifts[3]].val - pixel_image[pixel_index].val)
     @inbounds D2 = wrap_val(pixel_image[pixel_index+pixel_shifts[4]].val - pixel_image[pixel_index].val)
     return H*H + V*V + D1*D1 + D2*D2
-end
-
-# calculate reliability of horizontal edges
-function populate_horizontal_edges!(edges, pixel_image, params)
-    size_y, size_x = size(pixel_image)
-    edge_horizontal_domain = (size_y, size_x-1)
-    for i in CartesianRange(edge_horizontal_domain)
-        push!(edges, Edge(pixel_image[i],
-                          pixel_image[i+CartesianIndex(0,1)]
-                         ))
-    end
-    if params.x_connectivity
-        for i in CartesianRange(CartesianIndex(1,size_x), CartesianIndex(size_y,size_x))
-            push!(edges, Edge(pixel_image[i],
-                              pixel_image[i+CartesianIndex(0,-size_x+1)]
-                             ))
-        end
-    end
-end
-
-function populate_vertical_edges!(edges, pixel_image, params)
-    size_y, size_x = size(pixel_image)
-    edge_vertical_domain = (size_y-1, size_x)
-    for i in CartesianRange(edge_vertical_domain)
-        push!(edges, Edge(pixel_image[i],
-                          pixel_image[i+CartesianIndex(1,0)]
-                         ))
-    end
-    if params.y_connectivity
-        for i in CartesianRange(CartesianIndex(size_y,1), CartesianIndex(size_y,size_x))
-            push!(edges, Edge(pixel_image[i],
-                              pixel_image[i+CartesianIndex(-size_y+1,0)]
-                             ))
-        end
-    end
 end

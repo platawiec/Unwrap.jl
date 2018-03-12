@@ -29,6 +29,15 @@ Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
                     find_period(g1.val, g2.val))
 Base.isless(e1::Edge, e2::Edge) = isless(e1.reliability, e2.reliability)
 
+# function to broadcast
+function init_pixels(wrapped_image)
+    pixel_image = similar(wrapped_image, Pixel{eltype(wrapped_image)})
+    @Threads.threads for i in eachindex(wrapped_image)
+        @inbounds pixel_image[i] = Pixel(wrapped_image[i])
+    end
+    return pixel_image
+end
+
 function gather_pixels!(edges, params)
     for edge in edges
         merge_groups!(edge)
@@ -110,4 +119,31 @@ function merge_into_group!(pixel_base::Pixel, pixel_target::Pixel, periods)
     end
     # assign pixel_target to pixel_base's group last
     merge_pixels!(pixel_base, pixel_target, periods)
+end
+
+function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where {T, N}
+    size_img       = collect(size(pixel_image))
+    size_img[dim] -= 1
+    idx_step       = fill(0, N)
+    idx_step[dim] += 1
+    idx_step       = CartesianIndex{N}(idx_step...)
+    idx_size       = CartesianIndex{N}(size_img...)
+    for i in CartesianRange(idx_size)
+        push!(edges, Edge(pixel_image[i],
+                          pixel_image[i+idx_step]
+                         ))
+    end
+    if connected
+        idx_step = fill(0, N)
+        idx_step[dim] = -size_img[dim]
+        idx_step = CartesianIndex{N}(idx_step...)
+        edge_begin  = fill(1, N)
+        edge_begin[dim] = size(pixel_image)[dim]
+        edge_begin = CartesianIndex{N}(edge_begin...)
+        for i in CartesianRange(edge_begin, CartesianIndex(size(pixel_image)))
+            push!(edges, Edge(pixel_image[i],
+                              pixel_image[i+idx_step]
+                             ))
+        end
+    end
 end

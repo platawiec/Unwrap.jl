@@ -1,6 +1,6 @@
 # Unwrap
 
-This is a pure Julia implementation for 1D, 2D, and 3D phase unwrapping code based on:
+This is a pure Julia implementation for 1D, 2D, 3D and arbitrary-D phase unwrapping code based on:
  * (2D) M. A. Herráez, D. R. Burton, M. J. Lalor, and M. A. Gdeisat, "Fast two-dimensional phase-unwrapping algorithm based on sorting by reliability following a noncontinuous path", `Applied Optics, Vol. 41, Issue 35, pp. 7437-7444 (2002) <http://dx.doi.org/10.1364/AO.41.007437>`_,
 * (3D) H. Abdul-Rahman, M. Gdeisat, D. Burton, M. Lalor, "Fast three-dimensional phase-unwrapping algorithm based on sorting by reliability following a non-continuous path", `Proc. SPIE 5856, Optical Measurement Systems for Industrial Inspection IV, 32 (2005) <http://dx.doi.ogr/doi:10.1117/12.611415>`_.
 
@@ -26,7 +26,7 @@ in-place version, `unwrap!(A)` which mutates `A`. The returned array will have
 the same precision as `A` (i.e. `BigFloat`, `Float32`, etc. work). Type
 `?unwrap` for more.
 
-Currently only 1D and 2D unwrapping is supported.
+1D, 2D, and 3D unwrapping are all supported, as well as arbitrary dimensions, for whatever reason.
 
 ## See Also
 

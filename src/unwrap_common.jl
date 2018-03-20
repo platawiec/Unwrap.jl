@@ -17,11 +17,16 @@ end
 Pixel(v) = Pixel{typeof(v)}(0, v, rand(), 1)
 @inline Base.length(p::Pixel) = p.head.groupsize
 
-struct Edge{T}
+struct Edge{N}
     reliability::Float64
-    pixel_1::Pixel{T}
-    pixel_2::Pixel{T}
+    pixel_1::CartesianIndex{N}
+    pixel_2::CartesianIndex{N}
     periods::Int
+end
+function Edge{N}(pixel_image, ind1, ind2) where N
+    @inbounds rel = pixel_image[ind1].reliability + pixel_image[ind2].reliability
+    @inbounds periods = find_period(pixel_image[ind1].val, pixel_image[ind2].val)
+    return Edge{N}(rel, ind1, ind2, periods)
 end
 Edge(g1, g2) = Edge(g1.reliability + g2.reliability,
                     g1, g2,
@@ -38,7 +43,7 @@ function unwrap!(wrapped_image::AbstractArray{T, N},
 
     pixel_image = init_pixels(wrapped_image)
     calculate_reliability(pixel_image, wrap_around)
-    edges = Edge{eltype(wrapped_image)}[]
+    edges = Edge{N}[]
     num_edges = _predict_num_edges(size(wrapped_image), wrap_around)
     sizehint!(edges, num_edges)
     for idx_dim=1:N
@@ -46,7 +51,7 @@ function unwrap!(wrapped_image::AbstractArray{T, N},
     end
 
     sort!(edges, alg=MergeSort)
-    gather_pixels!(edges)
+    gather_pixels!(pixel_image, edges)
     unwrap_image!(wrapped_image, pixel_image)
 
     return wrapped_image
@@ -69,9 +74,11 @@ function init_pixels(wrapped_image)
     return pixel_image
 end
 
-function gather_pixels!(edges)
+function gather_pixels!(pixel_image, edges)
     for edge in edges
-        merge_groups!(edge)
+        @inbounds p1 = pixel_image[edge.pixel_1]
+        @inbounds p2 = pixel_image[edge.pixel_2]
+        merge_groups!(edge, p1, p2)
     end
 end
 
@@ -98,9 +105,7 @@ function find_period(val_left, val_right)
     return period
 end
 
-function merge_groups!(edge)
-    pixel_1 = edge.pixel_1
-    pixel_2 = edge.pixel_2
+function merge_groups!(edge, pixel_1, pixel_2)
     if is_differentgroup(pixel_1, pixel_2)
         # pixel 2 is alone in group
         if is_pixelalone(pixel_2)
@@ -155,22 +160,20 @@ function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where 
     size_img[dim] -= 1
     idx_step       = fill(0, N)
     idx_step[dim] += 1
-    idx_step       = CartesianIndex{N}(idx_step...)
+    idx_step_cart  = CartesianIndex{N}(idx_step...)
     idx_size       = CartesianIndex{N}(size_img...)
     for i in CartesianRange(idx_size)
-        push!(edges, Edge(pixel_image[i],
-                          pixel_image[i+idx_step]))
+        push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
     end
     if connected
         idx_step        = fill(0, N)
         idx_step[dim]   = -size_img[dim]
-        idx_step        = CartesianIndex{N}(idx_step...)
+        idx_step_cart   = CartesianIndex{N}(idx_step...)
         edge_begin      = fill(1, N)
         edge_begin[dim] = size(pixel_image)[dim]
-        edge_begin      = CartesianIndex{N}(edge_begin...)
-        for i in CartesianRange(edge_begin, CartesianIndex(size(pixel_image)))
-            push!(edges, Edge(pixel_image[i],
-                              pixel_image[i+idx_step]))
+        edge_begin_cart = CartesianIndex{N}(edge_begin...)
+        for i in CartesianRange(edge_begin_cart, CartesianIndex(size(pixel_image)))
+            push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
         end
     end
 end

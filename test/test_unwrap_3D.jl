@@ -3,7 +3,7 @@ f(x, y, z) = 0.5x^2 - 0.1y^3 + z
 f_wraparound2(x, y, z) = 5*sin(x) + 2*cos(y) + z
 f_wraparound3(x, y, z) = 5*sin(x) + 2*cos(y) - 3*cos(z)
 for T in Types
-    grid = range(zero(T), 2π*one(T), length=40)
+    grid = range(zero(T), stop=2π*one(T), length=40)
     f_uw = f.(grid, grid', reshape(grid, 1, 1, :))
     f_wr = f_uw .% (2π)
     uw_test = unwrap(f_wr)

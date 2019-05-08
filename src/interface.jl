@@ -11,18 +11,18 @@ Unwraps the values in A modulo 2π, where A is a 1-, 2-, or 3- dimensional array
 - `seed::Int`: Unwrapping of 2D or 3D images uses a random initialization. This
     sets the seed of the RNG.
 """
-unwrap
+function unwrap end
 
 """
     unwrap!(A[, wrap_around, seed])
 
 In-place version of unwrap.
 """
-unwrap!
+function unwrap! end
 
-function unwrap{T, N}(A::AbstractArray{T, N},
+function unwrap(A::AbstractArray{T, N},
                 wrap_around::NTuple{N, Bool}=tuple(zeros(Bool, N)...),
-                seed::Int=-1)
+                seed::Int=-1) where {T,N}
     A_copy = copy(A)
     unwrap!(A_copy, wrap_around, seed)
     return A_copy

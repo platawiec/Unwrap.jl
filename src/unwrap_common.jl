@@ -183,7 +183,7 @@ end
 function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) where {T, N}
     # get the shifted pixel indices in CartesinanIndex form
     # This gets all the nearest neighbors (CartesionIndex{N}() = one(CartesianIndex{N}))
-    pixel_shifts = collect(-CartesianIndex{N}():CartesianIndex{N}())
+    pixel_shifts = collect(CartesianIndex{N}(CartesianIndex{N}().I .* -1):CartesianIndex{N}())
     size_img = size(pixel_image)
     # inner loop
     for i in CartesianIndex{N}(CartesianIndex{N}().I .+ 1) : CartesianIndex{N}(CartesianIndex{N}(size_img).I .- 1)

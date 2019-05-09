@@ -212,7 +212,7 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
                 @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts_border)
             end
             # second border
-            pixel_shifts_border = copy!(pixel_shifts_border, pixel_shifts)
+            pixel_shifts_border = copyto!(pixel_shifts_border, pixel_shifts)
             for (idx_ps, ps) in enumerate(pixel_shifts_border)
                 # if the pixel shift goes out of bounds, we make the shift wrap, this time to the other side
                 if ps[idx_dim] == -1

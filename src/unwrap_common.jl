@@ -164,7 +164,7 @@ function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where 
     idx_step[dim] += 1
     idx_step_cart  = CartesianIndex{N}(idx_step...)
     idx_size       = CartesianIndex{N}(size_img...)
-    for i in CartesianIndex{N}():idx_size
+    for i in CartesianIndices((:).(Tuple(CartesianIndex{N}()),Tuple(idx_size)))
         push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
     end
     if connected
@@ -174,7 +174,7 @@ function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where 
         edge_begin      = fill(1, N)
         edge_begin[dim] = size(pixel_image)[dim]
         edge_begin_cart = CartesianIndex{N}(edge_begin...)
-        for i in edge_begin_cart : CartesianIndex(size(pixel_image))
+        for i in CartesianIndices((:).(Tuple(edge_begin_cart), Tuple(CartesianIndex(size(pixel_image)))))
             push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
         end
     end
@@ -208,7 +208,7 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
             border_end            = collect(size_img).-1
             border_end[idx_dim]   = size_img[idx_dim]
             border_end = CartesianIndex{N}(border_end...)
-            for i in border_begin:border_end
+            for i in CartesianIndices((:).(Tuple(border_begin), Tuple(border_end)))
                 @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts_border)
             end
             # second border
@@ -227,7 +227,7 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
             border_end            = collect(size_img).-1
             border_end[idx_dim]   = 1
             border_end = CartesianIndex{N}(border_end...)
-            for i in border_begin: border_end
+            for i in CartesianIndices((:).(Tuple(border_begin), Tuple(border_end)))
                 @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts_border)
             end
         end

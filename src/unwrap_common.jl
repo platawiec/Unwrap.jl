@@ -186,7 +186,7 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
     pixel_shifts = collect(CartesianIndices(tuple(repeat([-1:1],N)...)))
     size_img = size(pixel_image)
     # inner loop
-    for i in CartesianIndex{N}(CartesianIndex{N}().I .+ 1) : CartesianIndex{N}(CartesianIndex{N}(size_img).I .- 1)
+    for i in CartesianIndices((:).(tuple(fill(2,length(size_img))...),size_img.-1))
         @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
     end
 

@@ -1,12 +1,16 @@
 # Unwrap
 
+## Notice
+
+This functionality has been moved into the [DSP.jl](https://github.com/JuliaDSP/DSP.jl) package. Please see the [DSP.jl documentation](https://juliadsp.github.io/DSP.jl/stable/util/) for changes to the function signature.
+
+## Introduction
+
 This is a pure Julia implementation for 1D, 2D, 3D and arbitrary-D phase unwrapping code based on:
  * (2D) M. A. Herráez, D. R. Burton, M. J. Lalor, and M. A. Gdeisat, "Fast two-dimensional phase-unwrapping algorithm based on sorting by reliability following a noncontinuous path", `Applied Optics, Vol. 41, Issue 35, pp. 7437-7444 (2002) <http://dx.doi.org/10.1364/AO.41.007437>`_,
 * (3D) H. Abdul-Rahman, M. Gdeisat, D. Burton, M. Lalor, "Fast three-dimensional phase-unwrapping algorithm based on sorting by reliability following a non-continuous path", `Proc. SPIE 5856, Optical Measurement Systems for Industrial Inspection IV, 32 (2005) <http://dx.doi.ogr/doi:10.1117/12.611415>`_.
 
-More information about the code can be found on GERI homepage:
-[2D](http://www.ljmu.ac.uk/GERI/90207.htm),
-[3D](http://www.ljmu.ac.uk/GERI/90208.htm).
+More information about the code can be found on [GERI homepage](https://www.ljmu.ac.uk/research/centres-and-institutes/faculty-of-engineering-and-technology-research-institute/geri/phase-unwrapping):
 
 ## Installation
 

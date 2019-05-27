@@ -1,3 +1,5 @@
+using Random
+
 mutable struct Pixel{T}
     periods::Int
     val::T
@@ -5,7 +7,7 @@ mutable struct Pixel{T}
     groupsize::Int
     head::Pixel{T}
     last::Pixel{T}
-    next::Union{Void, Pixel{T}}
+    next::Union{Nothing, Pixel{T}}
     function Pixel{T}(periods, val, rel, gs) where T
         pixel = new(periods, val, rel, gs)
         pixel.head = pixel
@@ -38,7 +40,7 @@ function unwrap!(wrapped_image::AbstractArray{T, N},
                  seed::Int=-1) where {T, N}
 
     if seed != -1
-        srand(seed)
+        Random.seed!(seed)
     end
 
     pixel_image = init_pixels(wrapped_image)
@@ -162,7 +164,7 @@ function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where 
     idx_step[dim] += 1
     idx_step_cart  = CartesianIndex{N}(idx_step...)
     idx_size       = CartesianIndex{N}(size_img...)
-    for i in CartesianRange(idx_size)
+    for i in CartesianIndices((:).(Tuple(CartesianIndex{N}()),Tuple(idx_size)))
         push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
     end
     if connected
@@ -172,7 +174,7 @@ function populate_edges!(edges, pixel_image::Array{T, N}, dim, connected) where 
         edge_begin      = fill(1, N)
         edge_begin[dim] = size(pixel_image)[dim]
         edge_begin_cart = CartesianIndex{N}(edge_begin...)
-        for i in CartesianRange(edge_begin_cart, CartesianIndex(size(pixel_image)))
+        for i in CartesianIndices((:).(Tuple(edge_begin_cart), Tuple(CartesianIndex(size(pixel_image)))))
             push!(edges, Edge{N}(pixel_image, i, i+idx_step_cart))
         end
     end
@@ -181,11 +183,10 @@ end
 function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) where {T, N}
     # get the shifted pixel indices in CartesinanIndex form
     # This gets all the nearest neighbors (CartesionIndex{N}() = one(CartesianIndex{N}))
-    pixel_shifts = collect(CartesianRange(-CartesianIndex{N}(),
-                                           CartesianIndex{N}()))
+    pixel_shifts = collect(CartesianIndices(tuple(repeat([-1:1],N)...)))
     size_img = size(pixel_image)
     # inner loop
-    for i in CartesianRange((CartesianIndex{N}()+1), (CartesianIndex{N}(size_img)-1))
+    for i in CartesianIndices((:).(tuple(fill(2,length(size_img))...),size_img.-1))
         @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts)
     end
 
@@ -204,14 +205,14 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
             border_begin          = fill(2, N)
             border_begin[idx_dim] = size_img[idx_dim]
             border_begin          = CartesianIndex{N}(border_begin...)
-            border_end            = collect(size_img)-1
+            border_end            = collect(size_img).-1
             border_end[idx_dim]   = size_img[idx_dim]
             border_end = CartesianIndex{N}(border_end...)
-            for i in CartesianRange(border_begin, border_end)
+            for i in CartesianIndices((:).(Tuple(border_begin), Tuple(border_end)))
                 @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts_border)
             end
             # second border
-            pixel_shifts_border = copy!(pixel_shifts_border, pixel_shifts)
+            pixel_shifts_border = copyto!(pixel_shifts_border, pixel_shifts)
             for (idx_ps, ps) in enumerate(pixel_shifts_border)
                 # if the pixel shift goes out of bounds, we make the shift wrap, this time to the other side
                 if ps[idx_dim] == -1
@@ -223,10 +224,10 @@ function calculate_reliability(pixel_image::AbstractArray{T, N}, wrap_around) wh
             border_begin          = fill(2, N)
             border_begin[idx_dim] = 1
             border_begin          = CartesianIndex{N}(border_begin...)
-            border_end            = collect(size_img)-1
+            border_end            = collect(size_img).-1
             border_end[idx_dim]   = 1
             border_end = CartesianIndex{N}(border_end...)
-            for i in CartesianRange(border_begin, border_end)
+            for i in CartesianIndices((:).(Tuple(border_begin), Tuple(border_end)))
                 @inbounds pixel_image[i].reliability = calculate_pixel_reliability(pixel_image, i, pixel_shifts_border)
             end
         end
